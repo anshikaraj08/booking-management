@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: aetheria-heights-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        scope: shared
+      - key: JWT_SECRET
+        scope: shared
+      - key: GEMINI_API_KEY
+        scope: shared
+      - key: EMAIL_USER
+        scope: shared
+      - key: EMAIL_PASS
+        scope: shared
+      - key: FRONTEND_URL
+        value: https://aetheria-heights-frontend.onrender.com
+
+  - type: static
+    name: aetheria-heights-frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://aetheria-heights-backend.onrender.com

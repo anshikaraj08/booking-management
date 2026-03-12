@@ -58,6 +58,9 @@ const CustomerPortal = ({ rooms, halls, menuItems, bookings, diningOrders, user,
   const [isUploading, setIsUploading] = useState(false);
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
 
+  // NEW: state for the Add Card modal
+  const [newCardDetails, setNewCardDetails] = useState({ number: '', expiry: '', cvv: '', name: '' });
+
   // -- DINING STATE --
   const [diningCategory, setDiningCategory] = useState('Western');
   const [cart, setCart] = useState([]);
@@ -240,7 +243,7 @@ const CustomerPortal = ({ rooms, halls, menuItems, bookings, diningOrders, user,
 
       setIsSubscribing(true);
       try {
-          const response = await fetch('http://localhost:3002/api/newsletter/subscribe', {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/newsletter/subscribe`, {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
@@ -584,7 +587,8 @@ const CustomerPortal = ({ rooms, halls, menuItems, bookings, diningOrders, user,
   };
 
   const handleRemoveDocument = (id) => onUpdateProfile({ ...profile, documents: profile.documents.filter(d => d.id !== id) });
-  const handleRemoveCard = (id) => onUpdateProfile({ ...profile, paymentMethods: profile.paymentMethods.filter(p => p.id !== id) });
+  // updated to guard against undefined paymentMethods
+  const handleRemoveCard = (id) => onUpdateProfile({ ...profile, paymentMethods: (profile.paymentMethods || []).filter(p => p.id !== id) });
   const handleAddCard = () => {
       setNewCardDetails({ number: '', expiry: '', cvv: '', name: '' });
       setIsAddCardModalOpen(true);
@@ -623,7 +627,8 @@ const CustomerPortal = ({ rooms, halls, menuItems, bookings, diningOrders, user,
           cardHolder: newCardDetails.name
       };
 
-      onUpdateProfile({ ...profile, paymentMethods: [...profile.paymentMethods, newCard] });
+      // safe merge if paymentMethods is undefined
+      onUpdateProfile({ ...profile, paymentMethods: [...(profile.paymentMethods || []), newCard] });
       setIsAddCardModalOpen(false);
       setNewCardDetails({ number: '', expiry: '', cvv: '', name: '' });
   };
@@ -1146,7 +1151,7 @@ const CustomerPortal = ({ rooms, halls, menuItems, bookings, diningOrders, user,
                         <div key={room.id} onClick={() => handleBookRoomClick(room)} className="group cursor-pointer bg-white/5 rounded-xl overflow-hidden border border-white/10 hover:border-aetheria-gold/50 transition-all duration-300 hover:transform hover:-translate-y-2">
                             <div className="h-64 overflow-hidden relative">
                                 <img src={room.images[0]} alt={room.type} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur text-white px-3 py-1 rounded text-sm font-bold border border-white/20">₹{room.price.toLocaleString('en-IN')} <span className="text-xs font-normal text-gray-400">/ night</span></div>
+                                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur text-white px-3 py-1 rounded text-sm font-bold border border-white/20">₹{room.price.toLocaleString('en-IN')} <span className="text-xs font-normal text-gray-500">/ night</span></div>
                             </div>
                             <div className="p-6">
                                 <h3 className="text-xl font-serif font-bold text-white mb-2 group-hover:text-aetheria-gold transition-colors">{room.type}</h3>
@@ -1216,7 +1221,7 @@ const CustomerPortal = ({ rooms, halls, menuItems, bookings, diningOrders, user,
             <section className="max-w-7xl mx-auto py-12 px-4">
                 <div className="grid grid-cols-1 gap-12">
                     {halls.map((hall, idx) => (
-                        <div key={hall.id} className={`flex flex-col md:flex-row gap-8 items-center bg-white/5 border border-white/10 rounded-2xl overflow-hidden p-6 hover:border-aetheria-gold/30 transition-all ${idx % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
+                        <div key={hall.id} className={`flex flex-col md:flex-row gap-8 items-center bg-white/5 border border-white/10 rounded-2xl overflow-hidden p-6 hover:border-aetheria-gold/30 transition-colors ${idx % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
                             <div className="w-full md:w-1/2 h-80 rounded-xl overflow-hidden relative group">
                                 <img src={hall.images[0]} alt={hall.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                                 <div className="absolute top-4 left-4 bg-aetheria-gold text-aetheria-navy px-3 py-1 rounded text-xs font-bold uppercase tracking-wider">{hall.type}</div>
@@ -1445,10 +1450,10 @@ const CustomerPortal = ({ rooms, halls, menuItems, bookings, diningOrders, user,
                       
                       {/* Document List Feedback */}
                       {profile.documents && profile.documents.length > 0 && (
-                          <div className="bg-white/5 rounded-lg p-3 space-y-2">
-                              <p className="text-xs font-bold text-gray-400 uppercase">Attached Documents</p>
+                          <div className="bg-white/5 rounded-lg p-3 mb-6 text-left">
+                              <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Attached Documents</div>
                               {profile.documents.map((doc) => (
-                                  <div key={doc.id} className="flex items-center justify-between bg-black/30 p-2 rounded border border-white/10">
+                                  <div key={doc.id} className="flex items-center justify-between bg-black/30 p-2 rounded border border-white/10 mb-2">
                                       <div className="flex items-center gap-2 overflow-hidden">
                                           <FileText className="w-4 h-4 text-aetheria-gold flex-shrink-0" />
                                           <span className="text-sm text-white truncate max-w-[150px]">{doc.fileName}</span>
@@ -1561,13 +1566,18 @@ const CustomerPortal = ({ rooms, halls, menuItems, bookings, diningOrders, user,
                                 <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 text-aetheria-gold">
                                     <Banknote className="w-8 h-8" />
                                 </div>
-                                <h4 className="text-white font-bold mb-2">Pay at Hotel</h4>
-                                <p className="text-sm text-gray-400">Your booking will be held. Please settle the amount upon arrival at the front desk.</p>
+                                <h4 className="text-white font-bold mb-2">Room Charge</h4>
+                                <p className="text-sm text-gray-400">Total will be added to your final room bill for settlement at checkout.</p>
                             </div>
                         )}
                     </div>
 
-                    <div className="flex justify-between pt-4"><button onClick={() => setStep(hasVerifiedID() ? 1 : 2)} className="text-gray-400 hover:text-white">Back</button><button onClick={handleManualPaymentSubmit} disabled={isProcessing} className="bg-aetheria-gold text-aetheria-navy font-bold py-3 px-8 rounded hover:bg-white transition-colors flex items-center justify-center min-w-[140px] disabled:opacity-50">{isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Payment'}</button></div>
+                    <div className="flex justify-between pt-4">
+                        <button onClick={() => setStep(hasVerifiedID() ? 1 : 2)} className="text-gray-400 hover:text-white">Back</button>
+                        <button onClick={handleManualPaymentSubmit} disabled={isProcessing} className="bg-aetheria-gold text-aetheria-navy font-bold py-3 px-8 rounded hover:bg-white transition-colors flex items-center justify-center min-w-[140px] disabled:opacity-50">
+                            {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Payment'}
+                        </button>
+                    </div>
                 </div>
               )}
               {step === 4 && (
@@ -1742,7 +1752,7 @@ const CustomerPortal = ({ rooms, halls, menuItems, bookings, diningOrders, user,
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full hover:bg-red-500/20 text-white"><Minus className="w-3 h-3" /></button>
-                                                <span className="text-white font-bold w-4 text-center">{item.quantity}</span>
+                                                <span className="text-white font-bold w-4 text-center">{getCartItemQuantity(item.id)}</span>
                                                 <button onClick={() => addToCart(item)} className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full hover:bg-green-500/20 text-white"><Plus className="w-3 h-3" /></button>
                                             </div>
                                         </div>

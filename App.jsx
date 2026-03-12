@@ -4,7 +4,7 @@ import AdminPortal from './components/AdminPortal';
 import Chatbot from './components/Chatbot';
 import Auth from './components/Auth';
 
-const API_BASE = 'http://localhost:3002';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // Initial Mock Data
 const INITIAL_ROOMS = [

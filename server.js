@@ -14,7 +14,12 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/aetheria_h
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 // Increase JSON body limit so we can store small document previews (base64)
 app.use(express.json({ limit: '10mb' }));
 
@@ -160,7 +165,9 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['GUEST', 'ADMIN'], default: 'GUEST' }
+    role: { type: String, enum: ['GUEST', 'ADMIN'], default: 'GUEST' },
+    securityQuestion: { type: String, required: true },
+    securityAnswerHash: { type: String, required: true }
   },
   { timestamps: true }
 );
@@ -319,9 +326,9 @@ app.get('/', (req, res) => {
 // ====== AUTH (Register / Login) ======
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Name, email and password are required' });
+    const { name, email, password, role, securityQuestion, securityAnswer } = req.body;
+    if (!name || !email || !password || !securityQuestion || !securityAnswer) {
+      return res.status(400).json({ error: 'Name, email, password, security question and answer are required' });
     }
 
     const existing = await User.findOne({ email });
@@ -330,11 +337,14 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const securityAnswerHash = await bcrypt.hash(securityAnswer.toLowerCase().trim(), 10);
     const user = await User.create({
       name,
       email,
       passwordHash,
-      role: role === 'ADMIN' ? 'ADMIN' : 'GUEST'
+      role: role === 'ADMIN' ? 'ADMIN' : 'GUEST',
+      securityQuestion,
+      securityAnswerHash
     });
 
     // Ensure a Profile exists for this user
@@ -402,6 +412,96 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Failed to login', details: err.message });
+  }
+});
+
+// ====== FORGOT PASSWORD ======
+// Get security question by email
+app.post('/api/auth/forgot-password/question', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.securityQuestion) {
+      return res.status(400).json({ error: 'Security question not set for this account. Please contact support.' });
+    }
+
+    return res.json({
+      securityQuestion: user.securityQuestion
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to get security question', details: err.message });
+  }
+});
+
+// Verify security answer
+app.post('/api/auth/forgot-password/verify', async (req, res) => {
+  try {
+    const { email, securityAnswer } = req.body;
+    if (!email || !securityAnswer) {
+      return res.status(400).json({ error: 'Email and security answer are required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify security answer (case-insensitive comparison)
+    const isValidAnswer = await bcrypt.compare(securityAnswer.toLowerCase().trim(), user.securityAnswerHash);
+    if (!isValidAnswer) {
+      return res.status(401).json({ error: 'Incorrect security answer' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Security answer verified'
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to verify security answer', details: err.message });
+  }
+});
+
+// Verify security answer and reset password
+app.post('/api/auth/forgot-password/reset', async (req, res) => {
+  try {
+    const { email, securityAnswer, newPassword } = req.body;
+    if (!email || !securityAnswer || !newPassword) {
+      return res.status(400).json({ error: 'Email, security answer, and new password are required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify security answer (case-insensitive comparison)
+    const isValidAnswer = await bcrypt.compare(securityAnswer.toLowerCase().trim(), user.securityAnswerHash);
+    if (!isValidAnswer) {
+      return res.status(401).json({ error: 'Incorrect security answer' });
+    }
+
+    // Update password
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = passwordHash;
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to reset password', details: err.message });
   }
 });
 
