@@ -2,25 +2,64 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Aetheria Heights — Booking Management System
 
-This contains everything you need to run your app locally.
+A luxury hospitality management suite with guest and admin portals and an AI concierge.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1PFUxoL6i6uumLFaMBAgO4ZnMMaRXbjAG
+## Project structure
 
-## Run Locally
+```
+booking-management/
+├── backend/                     # Express + MongoDB REST API
+│   ├── src/
+│   │   ├── config/              # env loading, DB connection, mail transporter
+│   │   ├── models/              # Mongoose schemas (User, Room, Hall, Booking, ...)
+│   │   ├── controllers/         # Request handlers (business logic per resource)
+│   │   ├── routes/              # Express routers, mounted under /api
+│   │   ├── middleware/          # auth (JWT, admin), error handling
+│   │   ├── services/            # Reusable logic (email, Gemini AI concierge)
+│   │   ├── templates/           # HTML email templates
+│   │   ├── app.js               # Express app setup (middleware + routes)
+│   │   └── server.js            # Entry point: connect DB, start server
+│   ├── .env.example
+│   └── package.json
+│
+├── frontend/                    # React + Vite client
+│   ├── src/
+│   │   ├── components/          # AdminPortal, CustomerPortal, Auth, Chatbot
+│   │   ├── services/            # API clients (chat concierge)
+│   │   ├── App.jsx
+│   │   ├── main.jsx             # React entry point
+│   │   └── types.js             # JSDoc type definitions
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── .env.example
+│   └── package.json
+│
+└── render.yaml                  # Render deployment (backend + frontend)
+```
 
-**Prerequisites:**  Node.js
+## Run locally
 
+**Prerequisites:** Node.js, MongoDB
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. **Email Setup (for Newsletter functionality):**
-   - Update `EMAIL_USER` in [.env.local](.env.local) with your Gmail address
-   - Generate an App Password from Google Account settings:
-     - Go to Google Account → Security → 2-Step Verification → App passwords
-     - Generate a new app password for "Mail"
-     - Set `EMAIL_PASS` in [.env.local](.env.local) to this app password
-4. Run the app:
-   `npm run dev`
+### Backend
+
+```bash
+cd backend
+npm install
+cp .env.example .env    # fill in values, incl. GEMINI_API_KEY
+npm run dev             # http://localhost:3001
+```
+
+**Email setup (newsletter):** set `EMAIL_USER` to your Gmail address and `EMAIL_PASS` to an App Password
+(Google Account → Security → 2-Step Verification → App passwords → generate one for "Mail").
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+cp .env.example .env    # set VITE_API_URL
+npm run dev             # http://localhost:3000
+```

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Sparkles, Loader2 } from 'lucide-react';
-import { sendMessageToGemini } from '../services/geminiService';
+import { sendChatMessage } from '../services/chatService';
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +40,7 @@ const Chatbot = () => {
     setIsLoading(true);
 
     try {
-      const responseText = await sendMessageToGemini(userMsg.text);
+      const responseText = await sendChatMessage(userMsg.text);
       const botMsg = {
         id: (Date.now() + 1).toString(),
         role: 'model',
