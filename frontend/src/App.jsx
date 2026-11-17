@@ -6,6 +6,12 @@ import Auth from './components/Auth';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+// JSON + JWT headers for authenticated API calls
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('token')}`
+});
+
 // Initial Mock Data
 const INITIAL_ROOMS = [
   {
@@ -314,7 +320,7 @@ const App = () => {
       delete payload.id;
       const res = await fetch(`${API_BASE}/api/feedbacks`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(payload)
       });
       const saved = await res.json();
@@ -372,7 +378,7 @@ const App = () => {
       delete payload.id;
       const res = await fetch(`${API_BASE}/api/rooms`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(payload)
       });
       const saved = await res.json();
@@ -390,7 +396,7 @@ const App = () => {
       delete payload.id;
       const res = await fetch(`${API_BASE}/api/rooms/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(payload)
       });
       const saved = await res.json();
@@ -403,7 +409,7 @@ const App = () => {
   
   const handleDeleteRoom = async (id) => {
     try {
-      await fetch(`${API_BASE}/api/rooms/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/api/rooms/${id}`, { method: 'DELETE', headers: authHeaders() });
       setRooms(prev => prev.filter(r => r.id !== id));
     } catch (err) {
       console.error('Failed to delete room', err);
@@ -416,7 +422,7 @@ const App = () => {
       delete payload.id;
       const res = await fetch(`${API_BASE}/api/halls`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(payload)
       });
       const saved = await res.json();
@@ -434,7 +440,7 @@ const App = () => {
       delete payload.id;
       const res = await fetch(`${API_BASE}/api/halls/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(payload)
       });
       const saved = await res.json();
@@ -447,7 +453,7 @@ const App = () => {
 
   const handleDeleteHall = async (id) => {
     try {
-      await fetch(`${API_BASE}/api/halls/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/api/halls/${id}`, { method: 'DELETE', headers: authHeaders() });
       setHalls(prev => prev.filter(h => h.id !== id));
     } catch (err) {
       console.error('Failed to delete hall', err);
@@ -460,7 +466,7 @@ const App = () => {
       delete payload.id;
       const res = await fetch(`${API_BASE}/api/menu-items`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(payload)
       });
       const saved = await res.json();
@@ -478,7 +484,7 @@ const App = () => {
       delete payload.id;
       const res = await fetch(`${API_BASE}/api/menu-items/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(payload)
       });
       const saved = await res.json();
@@ -491,7 +497,7 @@ const App = () => {
 
   const handleDeleteMenuItem = async (id) => {
     try {
-      await fetch(`${API_BASE}/api/menu-items/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/api/menu-items/${id}`, { method: 'DELETE', headers: authHeaders() });
       setMenuItems(prev => prev.filter(i => i.id !== id));
     } catch (err) {
       console.error('Failed to delete menu item', err);
@@ -511,7 +517,7 @@ const App = () => {
         // Always update (or create) by email – simpler and avoids id issues
         const res = await fetch(`${API_BASE}/api/profiles/${encodeURIComponent(email)}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({ ...payload, email })
         });
         const saved = await res.json();

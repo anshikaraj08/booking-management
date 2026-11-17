@@ -16,7 +16,6 @@ export default defineConfig(({ mode }) => {
           '/api': {
             target: 'http://localhost:3001',
             changeOrigin: true,
-            rewrite: (path) => path.replace(/^\/api/, '')
           }
         }
       },
@@ -24,14 +23,12 @@ export default defineConfig(({ mode }) => {
         include: /\.(jsx|js)$/,
       })],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.API_URL': JSON.stringify(env.VITE_API_URL || 'http://localhost:3001')
       },
       resolve: {
         extensions: ['.js', '.jsx', '.json'],
         alias: {
-          '@': path.resolve(__dirname, '.'),
+          '@': path.resolve(__dirname, 'src'),
         }
       }
     };

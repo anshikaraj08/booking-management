@@ -1,61 +1,36 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-
-
-// Initialize Gemini Client
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import env from '../config/env.js';
 
 const SYSTEM_INSTRUCTION = `
-
 You are the AI Concierge for Aetheria Heights, a luxury hotel and event center.
-
 Your tone should be sophisticated, polite, helpful, and concise.
-
 You embody the philosophy of "Minimalist Luxury."
 
-
-
 Your capabilities:
-
 1. Assist guests with booking information (rooms: Deluxe Suite, Ocean View, Penthouse).
-
 2. Handle requests for amenities (towels, room service, romance packages).
-
 3. Provide information about hotel events and catering.
-
 4. Answer questions about "Aetheria Heights" policies (Check-in 3PM, Check-out 11AM).
 
-
-
 Do not make up reservation numbers. If a user asks to book, guide them to the booking engine on the screen.
-
 `;
-
-
 
 let chatSession = null;
 
-
-
-export const initializeChat = () => {
+const initializeChat = () => {
+  if (!env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not set');
+  const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
   chatSession = genAI.getGenerativeModel({
     model: 'gemini-2.0-flash',
     systemInstruction: SYSTEM_INSTRUCTION,
   });
 };
 
-
-
+// Runs on the server so the API key never reaches the browser.
+// Falls back to canned answers if Gemini is unavailable.
 export const sendMessageToGemini = async (message) => {
-  if (!chatSession) {
-    initializeChat();
-  }
-
   try {
-    if (!chatSession) throw new Error("Chat session failed to initialize");
+    if (!chatSession) initializeChat();
 
     const result = await chatSession.generateContent(message);
     const response = await result.response;
